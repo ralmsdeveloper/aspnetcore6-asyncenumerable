@@ -1,0 +1,1 @@
+# aspnetcore6-asyncenumerable
