@@ -1,0 +1,68 @@
+﻿@page "/pessoas"
+@using DevIO.Shared.Data
+@using System.Text.Json
+@inject HttpClient Http
+
+<PageTitle>Pessoas</PageTitle>
+
+<h1>Pessoas</h1>
+<button class="btn btn-primary" @onclick="@(()=>GetPessoas("/"))">Buscar</button>
+<button class="btn btn-primary" @onclick="@(()=>GetPessoas("/stream"))">Buscar</button>
+<center><img src="images/devio.png" alt="" /> </center><br />
+@if (_pessoas == null)
+{
+    <p><em>...</em></p>
+}
+else if (!_pessoas.Any())
+{
+    <p><em>Carregando...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Foto</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pessoa in _pessoas)
+            {
+                <tr>
+                    <td>@pessoa.Nome</td>
+                    <td>@pessoa.Email</td>
+                    <td><img src="@pessoa.Foto" alt="" width="25" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private List<Pessoa> _pessoas = null!;
+
+    private async Task GetPessoas(string path)
+    {
+        _pessoas = new List<Pessoa>();
+
+        var response = await Http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+        var stream = await response.Content.ReadAsStreamAsync();
+        var pessoas = JsonSerializer.DeserializeAsyncEnumerable<Pessoa>(
+            stream,
+            new JsonSerializerOptions 
+            {
+                PropertyNameCaseInsensitive = true,  
+                DefaultBufferSize = 5 
+            });
+
+        await foreach (var pessoa in pessoas!)
+        {
+            _pessoas.Add(pessoa);
+            StateHasChanged();
+        }
+    }
+}
